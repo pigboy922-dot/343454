@@ -24,6 +24,12 @@ from flask import Flask, Response, abort, jsonify, redirect, request, send_from_
 
 from v1046_cloud_daily_risk_guard import run_pipeline
 
+try:
+    from v1046_gs_sync import get_sheets_status, public_sheet_url
+except Exception:  # pragma: no cover
+    get_sheets_status = None
+    public_sheet_url = None
+
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "output"
 STATE = ROOT / "state"
@@ -120,6 +126,11 @@ def _job_snapshot() -> Dict[str, object]:
     data["auto_open_enabled"] = auto_open_enabled()
     data["auto_open_mode"] = "DEMO" if auto_open_demo() else "REAL"
     data["auto_open_cooldown_seconds"] = auto_open_cooldown_seconds()
+    if get_sheets_status is not None:
+        try:
+            data["google_sheets"] = get_sheets_status(light=True)
+        except Exception as exc:
+            data["google_sheets"] = {"enabled": False, "error": f"{type(exc).__name__}: {exc}"}
     return data
 
 
@@ -286,6 +297,7 @@ def cloud_bar_html() -> str:
   <button class="v1046-primary" type="button" data-v1046-run="real">跑正式</button>
   <button class="v1046-demo" type="button" data-v1046-run="demo">跑 DEMO</button>
   <a href="{url_for('files_page')}">下載檔案</a>
+  <a href="{url_for('sheets_page')}">Google Sheets</a>
   <a href="{url_for('health')}">健康檢查</a>
   <a href="{url_for('api_status')}">API 狀態</a>
   <span class="v1046-status"><span class="v1046-dot"></span><span id="v1046-cloud-status-text">雲端控制列已載入{auto}{locked}</span></span>
@@ -433,6 +445,32 @@ def api_run():
 @app.route("/api/status")
 def api_status():
     return jsonify(_job_snapshot())
+
+
+@app.route("/api/sheets/status")
+def api_sheets_status():
+    if get_sheets_status is None:
+        return jsonify({"enabled": False, "configured": False, "error": "v1046_gs_sync import failed"})
+    check = request.args.get("check", "0").strip().lower() in {"1", "true", "yes"}
+    return jsonify(get_sheets_status(light=not check))
+
+
+@app.route("/sheets")
+def sheets_page():
+    status = get_sheets_status(light=True) if get_sheets_status is not None else {"enabled": False, "configured": False, "error": "v1046_gs_sync import failed"}
+    url = status.get("sheet_url") or ""
+    sa = status.get("service_account_email") or ""
+    rows = "".join(
+        f"<tr><th>{k}</th><td>{v}</td></tr>"
+        for k, v in status.items()
+        if k not in {"sheet_url"}
+    )
+    sheet_link = f"<a href='{url}' target='_blank' rel='noopener'>打開 Google Sheet</a>" if url else "尚未設定 V1046_GOOGLE_SHEET_ID"
+    share_hint = f"把這個 service account 加到 Google Sheet 共用名單：<b>{sa}</b>，權限選 Editor。" if sa else "尚未讀到 service account email，請確認 V1046_GOOGLE_SERVICE_ACCOUNT_JSON。"
+    html = f"""<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{APP_NAME}｜Google Sheets</title>{cloud_css()}<style>
+body{{margin:0;background:#eef2f6;color:#243447;font-family:'Microsoft JhengHei',Arial,sans-serif}}.wrap{{max-width:1080px;margin:0 auto;padding:18px}}.card{{background:#fffdf7;border:1px solid #dde4dc;border-radius:18px;margin:14px 0;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}}table{{border-collapse:collapse;width:100%;font-size:13px}}th,td{{border-bottom:1px solid #e2e8d7;padding:8px;text-align:left;vertical-align:top}}th{{background:#eef1e6;width:240px}}a{{color:#2563eb;font-weight:800}}code{{background:#e2e8f0;border-radius:8px;padding:2px 6px}}.ok{{color:#15803d;font-weight:900}}.warn{{color:#b45309;font-weight:900}}
+</style></head><body>{cloud_bar_html()}<div class="wrap"><div class="card"><h1>Google Sheets 同步狀態</h1><p>{sheet_link}</p><p>{share_hint}</p><table>{rows}</table><p><a href="{url_for('api_sheets_status')}?check=1">連線測試 /api/sheets/status?check=1</a></p></div><div class="card"><h2>同步內容</h2><p><b>state</b>：positions、closed_trades、equity_curve、signal_ledger。這是紙上交易帳本，開頁更新前會先從 Sheets 抓，跑完再回存。</p><p><b>output</b>：今日推薦、風控、監控摘要、FILTER/NO_REC 相關表格。dashboard HTML 不塞進 Sheets，仍由 Render 產生。</p><p><b>run_lock</b>：避免兩個瀏覽器同時打開造成互相覆蓋。</p></div></div>{cloud_script()}</body></html>"""
+    return html_response(html)
 
 
 @app.route("/api/files")

@@ -1,0 +1,20 @@
+{
+  "lookback_days": 420,
+  "max_signal_age_days": 3,
+  "paper_exit_due": true,
+  "paper_guard_enabled": true,
+  "pause_after_consecutive_losses": 4,
+  "monthly_reduce_drawdown_pct": -8.0,
+  "monthly_stop_drawdown_pct": -12.0,
+  "batch_size_tw": 20,
+  "batch_size_us": 30,
+  "cost_bps_per_side_monitor": 10,
+  "risk_guard_version": "V104.6",
+  "tw_month_stop_loss_pct": -6.0,
+  "tw_loss_streak_n": 2,
+  "tw_loss_streak_cooldown_days": 5,
+  "us_big_loss_pct": -8.0,
+  "us_big_loss_cooldown_days": 5,
+  "official_guard_profile": "TW_MSTOP_06_LOSS2_CD5__US_BIGLOSS_08_CD5",
+  "note": "Official V104.6: TW uses MSTOP_06_LOSS2_CD5; US uses BIGLOSS_08_CD5. Ultra-low-DD variants are NOT used."
+}

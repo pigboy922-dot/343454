@@ -36,6 +36,13 @@ try:
 except Exception:  # pragma: no cover
     yf = None
 
+try:
+    from v1046_gs_sync import sync_before_run, sync_after_run, get_sheets_status
+except Exception:  # pragma: no cover
+    sync_before_run = None
+    sync_after_run = None
+    get_sheets_status = None
+
 APP_VERSION = "V104.6 Cloud Daily with Monthly Risk Guard"
 ROOT = Path(__file__).resolve().parent
 CONFIG_DIR = ROOT / "config"
@@ -1172,8 +1179,11 @@ def run_pipeline(demo: bool = False, force: bool = False) -> int:
     settings = load_settings()
     health: List[str] = []
     error = None
+    sheets_ctx = None
     try:
         ensure_universe_files()
+        if sync_before_run is not None:
+            sheets_ctx = sync_before_run(health, demo=demo)
         tw_univ = read_universe("TW")
         us_univ = read_universe("US")
         if demo:
@@ -1226,6 +1236,11 @@ def run_pipeline(demo: bool = False, force: bool = False) -> int:
             health.append("INFO DEMO mode: recommendations not written into official paper positions")
         generate_dashboard(recs, positions, trades, alerts, risk, monitor, health, demo)
         generate_calibration_report(monitor, trades, positions)
+        if sync_after_run is not None:
+            try:
+                sync_after_run(sheets_ctx, health, demo=demo, status="success")
+            except Exception as sync_exc:
+                health.append(f"WARN Google Sheets sync after run failed: {type(sync_exc).__name__}: {sync_exc}")
         make_health_report(health)
         print(f"[OK] dashboard: {DASHBOARD_PATH}")
         print(f"[OK] today recs: {TODAY_RECS_SIMPLE_PATH}")
@@ -1241,6 +1256,11 @@ def run_pipeline(demo: bool = False, force: bool = False) -> int:
             generate_dashboard(pd.DataFrame(), read_positions(), read_trades(), pd.DataFrame([{"level":"ERROR", "market":"", "symbol":"", "message":risk["reason"]}]), risk, monitor, health, demo)
         except Exception:
             pass
+        if sync_after_run is not None and sheets_ctx is not None:
+            try:
+                sync_after_run(sheets_ctx, health, demo=demo, status="failed", error=error or "")
+            except Exception as sync_exc:
+                health.append(f"WARN Google Sheets failure sync failed: {type(sync_exc).__name__}: {sync_exc}")
         make_health_report(health, error=error)
         return 1
 

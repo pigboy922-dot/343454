@@ -1,1 +1,3 @@
-web: gunicorn v1046_server:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT
+﻿position_id,market,symbol,yfinance_symbol,name_zh,entry_date,entry_price,latest_date,latest_price,hold_days,planned_hold_bars,stop_loss_pct,status,exit_date,exit_price,exit_reason,realized_return_pct,strategy,profile_id
+TW_2330_2026-05-15_095725894235,TW,2330,2330.TW,台積電,2026-05-15,2290.000000,2026-05-15,2265.000000,0,15,0.1200,HOLD,,,,,台股 V104.2 驗證規則 H15 Top1 Max5 Stop-12%,TW_MINE_H15_MAX5_SC65_R5_L55_normal_only_near_SL12_TR0_A14_D12_momentum
+US_NVDA_2026-05-14_095725894338,US,NVDA,NVDA,輝達,2026-05-14,235.740005,2026-05-15,225.320007,1,10,0.1000,HOLD,,,,,美股 V104.2 驗證規則 H10 Top1 Max2 Stop-10%,US_MINE_H10_MAX2_SC70_R5_L65_normal_only_near_or_rebound_SL10_TR0_A25_D16_momentum
