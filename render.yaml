@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: v1046-cloud-daily-risk-guard
+    env: python
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: gunicorn v1046_server:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT
+    autoDeploy: false
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: TZ
+        value: Asia/Taipei
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: V1046_RUN_TOKEN
+        sync: false
+      - key: V1046_AUTO_RUN_ON_OPEN
+        value: true
+      - key: V1046_AUTO_RUN_MODE
+        value: real
+      - key: V1046_AUTO_OPEN_COOLDOWN_SECONDS
+        value: 600

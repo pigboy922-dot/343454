@@ -1,0 +1,3 @@
+﻿market,guard_name,block_new_buys,reason,month_realized_pct,consecutive_losses,cooldown_until,last_loss_pct,settings
+TW,TW_MSTOP_06_LOSS2_CD5,False,OK,0.0,0,,,
+US,US_BIGLOSS_08_CD5,False,OK,0.0,0,,,

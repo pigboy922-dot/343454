@@ -1,0 +1,1 @@
+今日沒有正式推薦。請看 dashboard 的健康檢查，或 output/v1046_tw_nearest_failed_candidates.csv、output/v1046_us_nearest_failed_candidates.csv。
