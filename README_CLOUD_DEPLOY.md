@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-.DS_Store
-.env
-logs/*.log
-output/*
-!output/.keep
-logs/*
-!logs/.keep
